@@ -20,12 +20,17 @@ from pythoncom import CoInitialize, CoUninitialize
 from optparse import OptionParser
 from pywintypes import com_error
 from PIL import ImageGrab # Note: PIL >= 3.3.1 required to work well with Excel screenshots
+from enum import Enum
+
+class Application(Enum):
+    Excel = 'Excel.Application'  # Microsoft Office
+    KET = 'ket.Application'  # WPS Office
 
 class ExcelFile(object):
     @classmethod
-    def open(cls, filename):
+    def open(cls, filename, application):
         obj = cls()
-        obj._open(filename)
+        obj._open(filename, application)
         return obj
 
     def __init__(self):
@@ -39,7 +44,7 @@ class ExcelFile(object):
         self.close()
         return False
 
-    def _open(self, filename):
+    def _open(self, filename, application):
         excel_pathname = os.path.abspath(filename)  # excel requires abspath
         if not os.path.exists(excel_pathname):
             raise IOError('No such excel file: %s', filename)
@@ -48,10 +53,10 @@ class ExcelFile(object):
         try:
             # Using DispatchEx to start new Excel instance, to not interfere with
             # one already possibly running on the desktop
-            self.app = win32com.client.DispatchEx('Excel.Application')
+            self.app = win32com.client.DispatchEx(application.value)
             self.app.Visible = 0
         except:
-            raise OSError('Failed to start Excel')
+            raise OSError(f'Failed to start {application.name}')
 
         try:
             self.workbook = self.app.Workbooks.Open(excel_pathname, ReadOnly=True)
@@ -70,7 +75,7 @@ class ExcelFile(object):
         CoUninitialize()
 
 
-def export_img(fn_excel, fn_image, page=None, _range=None):
+def export_img(fn_excel, fn_image, page=None, _range=None, application=Application.Excel):
     """ Exports images from excel file """
 
     output_ext = os.path.splitext(fn_image)[1].upper()
@@ -81,7 +86,7 @@ def export_img(fn_excel, fn_image, page=None, _range=None):
     if _range is not None and page is not None and '!' not in _range:
         _range = "'%s'!%s"%(page, _range)
 
-    with ExcelFile.open(fn_excel) as excel:
+    with ExcelFile.open(fn_excel, application) as excel:
         if _range is None:
             if page is None: page = 1
             try:
