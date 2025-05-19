@@ -44,7 +44,7 @@ class ExcelFile(object):
         self.close()
         return False
 
-    def _open(self, filename, application):
+    def _open(self, filename, application: Application = Application.Excel):
         excel_pathname = os.path.abspath(filename)  # excel requires abspath
         if not os.path.exists(excel_pathname):
             raise IOError('No such excel file: %s', filename)
@@ -75,7 +75,7 @@ class ExcelFile(object):
         CoUninitialize()
 
 
-def export_img(fn_excel, fn_image, page=None, _range=None, application=Application.Excel):
+def export_img(fn_excel, fn_image, page=None, _range=None, application: Application = Application.Excel):
     """ Exports images from excel file """
 
     output_ext = os.path.splitext(fn_image)[1].upper()
